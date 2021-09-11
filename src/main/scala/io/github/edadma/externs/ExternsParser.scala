@@ -17,7 +17,7 @@ object ExternsParser extends RegexParsers with PackratParsers {
     rep(extern) ^^ ExternDeclarationsAST
 
   lazy val extern: PackratParser[ExternDeclarationAST] =
-    kw("extern") ~> ctype ~ ident ~ ("(" ~> repsep(externParam, ",") <~ ")") <~ ";" ^^ {
+    (kw("cairo_public") | kw("extern")) ~> ctype ~ ident ~ ("(" ~> repsep(externParam, ",") <~ ")") <~ ";" ^^ {
       case t ~ n ~ List(ParameterAST(name, PrimitiveType("Unit", _))) => ExternDeclarationAST(n, t, Nil)
       case t ~ n ~ ps                                                 => ExternDeclarationAST(n, t, ps)
     }
@@ -44,7 +44,7 @@ object ExternsParser extends RegexParsers with PackratParsers {
   }
 
   lazy val externParam: PackratParser[ParameterAST] =
-    ctype ~ opt("/*" ~> ident <~ "*/") ^^ {
+    ctype ~ opt("/*" ~> ident <~ "*/" | ident) ^^ {
       case t ~ n => ParameterAST(n, t)
     }
 

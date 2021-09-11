@@ -70,7 +70,7 @@ object Main extends App {
     val template =
       """
         |{{#externs}}
-        |{{name}}({{#params}}{{name}}: {{type}}{{comma}}{{/params}}): {{type}} = extern //{{line}}
+        |def {{name}}({{#params}}{{name}}: {{type}}{{comma}}{{/params}}): {{type}} = extern //{{line}}
         |{{/externs}}
         |""".trim.stripMargin
 

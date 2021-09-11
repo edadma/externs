@@ -78,7 +78,7 @@ object Main extends App {
   }
 
   def externParams(params: List[ParameterAST]): json.Array = {
-    val array = for (ParameterAST(Ident(_, name), typ) <- params) yield {
+    val array = for (ParameterAST(Some(Ident(_, name)), typ) <- params) yield {
       (name, type2string(typ))
     }
 

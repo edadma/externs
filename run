@@ -1,0 +1,1 @@
+/home/ed/dev-sn/externs/target/scala-2.13/externs-out -s $1 -e $2 xlib.h

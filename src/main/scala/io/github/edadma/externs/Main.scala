@@ -41,9 +41,10 @@ object Main extends App {
   }
 
   val type2string: PartialFunction[TypeAST, String] = {
-    case PointerType(typ, const)            => s"${if (const) "${'/'}*const*/ " else ""}Ptr[${type2string(typ)}]"
-    case PrimitiveType(name, const)         => s"${if (const) "${'/'}*const*/ " else ""}$name"
-    case TypedefType(Ident(_, name), const) => s"${if (const) "${'/'}*const*/ " else ""}$name"
+    case PointerType(PrimitiveType("CChar", const), _) => s"${if (const) "/*const*/ " else ""}CString"
+    case PointerType(typ, const)                       => s"${if (const) "/*const*/ " else ""}Ptr[${type2string(typ)}]"
+    case PrimitiveType(name, const)                    => s"${if (const) "/*const*/ " else ""}$name"
+    case TypedefType(Ident(_, name), const)            => s"${if (const) "/*const*/ " else ""}$name"
   }
 
   OParser.parse(parser, args, Config(null, 1, None)) match {

@@ -28,9 +28,9 @@ object ExternsParser extends RegexParsers with PackratParsers {
     else s"C${typ.head.toUpper}${typ.tail}"
 
   lazy val simpleType: PackratParser[TypeAST] =
-    opt(kw("_Xconst")) ~ opt(kw("unsigned")) ~ (kw("int") | kw("char") | kw("long") | kw("void")) ^^ {
+    opt(kw("_Xconst") | kw("const")) ~ opt(kw("unsigned")) ~ (kw("int") | kw("char") | kw("long") | kw("void")) ^^ {
       case c ~ u ~ t => PrimitiveType(types(u, t), c.isDefined)
-    } | opt(kw("_Xconst")) ~ ident ^^ {
+    } | opt(kw("struct")) ~> opt(kw("_Xconst") | kw("const")) ~ ident ^^ {
       case c ~ n => TypedefType(n, c.isDefined)
     }
 

@@ -82,7 +82,7 @@ object Main extends App {
     for (ExternDeclarationAST(name, typ, params) <- externs) {
       list += json.Object(
         "name"   -> name.s,
-        "camel"  -> camel({ println(name.s drop prefix); name.s drop prefix }),
+        "camel"  -> camel(name.s drop prefix),
         "params" -> externParams(params),
         "native" -> native2string(typ),
         "scala"  -> scala2string(typ),

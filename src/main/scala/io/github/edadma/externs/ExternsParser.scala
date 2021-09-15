@@ -7,7 +7,7 @@ import scala.util.parsing.input.{CharSequenceReader, Position, Positional}
 
 object ExternsParser extends RegexParsers with PackratParsers {
 
-  override protected val whiteSpace: Regex = """(\s|//.*)+""".r // """(\s|/\*(.|[\r\n])*?\*/|//.*)+""".r
+  override protected val whiteSpace: Regex = """(\s|/\*(.|[\r\n])*?\*/|//.*)+""".r
 
   lazy val pos: PackratParser[Position] = positioned(success(new Positional {})) ^^ (_.pos)
 
@@ -17,20 +17,26 @@ object ExternsParser extends RegexParsers with PackratParsers {
     rep(extern) ^^ ExternDeclarationsAST
 
   lazy val extern: PackratParser[ExternDeclarationAST] =
-    (kw("cairo_public") | kw("extern")) ~> ctype ~ ident ~ ("(" ~> repsep(externParam, ",") <~ ")") <~ ";" ^^ {
-      case t ~ n ~ List(ParameterAST(name, PrimitiveType("Unit", _))) => ExternDeclarationAST(n, t, Nil)
-      case t ~ n ~ ps                                                 => ExternDeclarationAST(n, t, ps)
+    ((kw("YAML_DECLARE") ~ "(" ~> ctype <~ ")") | (kw("cairo_public") | kw("extern")) ~> ctype) ~ ident ~ ("(" ~> repsep(
+      externParam,
+      ",") <~ ")") <~ ";" ^^ {
+      case t ~ n ~ List(ParameterAST(name, PrimitiveType("Unit", "Unit", false, _))) => ExternDeclarationAST(n, t, Nil)
+      case t ~ n ~ ps                                                                => ExternDeclarationAST(n, t, ps)
     }
 
-  def types(unsigned: Option[String], typ: String): String =
+  def nativeTypes(unsigned: Option[String], typ: String): String =
     if (typ == "void") "Unit"
     else if (unsigned.isDefined) s"CUnsigned${typ.head.toUpper}${typ.tail}"
     else s"C${typ.head.toUpper}${typ.tail}"
 
+  def scalaTypes(typ: String): String =
+    if (typ == "void") "Unit"
+    else s"${typ.head.toUpper}${typ.tail}"
+
   lazy val simpleType: PackratParser[TypeAST] =
     opt(kw("_Xconst") | kw("const")) ~ opt(kw("unsigned")) ~ (kw("int") | kw("char") | kw("long") | kw("double") | kw(
       "void")) ^^ {
-      case c ~ u ~ t => PrimitiveType(types(u, t), c.isDefined)
+      case c ~ u ~ t => PrimitiveType(nativeTypes(u, t), scalaTypes(t), u.isDefined, c.isDefined)
     } | opt(kw("struct")) ~> opt(kw("_Xconst") | kw("const")) ~ ident ^^ {
       case c ~ n => TypedefType(n, c.isDefined)
     }

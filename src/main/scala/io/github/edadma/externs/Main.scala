@@ -36,20 +36,41 @@ object Main extends App {
         .validate(f =>
           if (f.exists && f.isFile && f.canRead) success
           else failure("<file> must exist and be a readable file"))
-        .text("path to text file to open")
+        .text(s"path to text file to open")
     )
   }
 
-  val type2string: PartialFunction[TypeAST, String] = {
-    case PointerType(PrimitiveType("CChar", const), _) => s"${if (const) "/*const*/ " else ""}CString"
-    case PointerType(typ, const)                       => s"${if (const) "/*const*/ " else ""}Ptr[${type2string(typ)}]"
-    case PrimitiveType(name, const)                    => s"${if (const) "/*const*/ " else ""}$name"
-    case TypedefType(Ident(_, name), const)            => s"${if (const) "/*const*/ " else ""}$name"
+  val native2string: PartialFunction[TypeAST, String] = {
+    case PointerType(PrimitiveType(s"CChar", _, _, const), _) => s"${if (const) s"${'/'}*const*/ " else ""}CString"
+    case PointerType(typ, const)                              => s"${if (const) s"${'/'}*const*/ " else ""}Ptr[${native2string(typ)}]"
+    case PrimitiveType(name, _, _, const)                     => s"${if (const) s"${'/'}*const*/ " else ""}$name"
+    case TypedefType(Ident(_, name), const)                   => s"${if (const) s"${'/'}*const*/ " else ""}$name"
   }
+
+  val scala2string: PartialFunction[TypeAST, String] = {
+    case PointerType(PrimitiveType(s"CChar", _, _, const), _) => s"${if (const) s"${'/'}*const*/ " else ""}String"
+    case PointerType(typ, const)                              => s"${if (const) s"${'/'}*const*/ " else ""}Ptr[${scala2string(typ)}]"
+    case PrimitiveType(_, name, _, const)                     => s"${if (const) s"${'/'}*const*/ " else ""}$name"
+    case TypedefType(Ident(_, name), const)                   => s"${if (const) s"${'/'}*const*/ " else ""}$name"
+  }
+
+  val prefix = 12
 
   OParser.parse(parser, args, Config(null, 1, None)) match {
     case Some(conf) => app(conf)
     case _          =>
+  }
+
+  def camel(s: String): String = {
+    val segs = s.split("_")
+    val buf  = new StringBuilder
+
+    buf ++= segs(0)
+
+    for (i <- segs.indices drop 1)
+      buf ++= segs(i).head.toUpper +: segs(i).tail
+
+    buf.toString
   }
 
   def app(conf: Config): Unit = {
@@ -59,10 +80,14 @@ object Main extends App {
     val list                           = new ListBuffer[json.Object]
 
     for (ExternDeclarationAST(name, typ, params) <- externs) {
-      list += json.Object("name"   -> name.s,
-                          "params" -> externParams(params),
-                          "type"   -> type2string(typ),
-                          "line"   -> (conf.start + name.pos.line - 1).toString)
+      list += json.Object(
+        "name"   -> name.s,
+        "camel"  -> camel({ println(name.s drop prefix); name.s drop prefix }),
+        "params" -> externParams(params),
+        "native" -> native2string(typ),
+        "scala"  -> scala2string(typ),
+        "line"   -> (conf.start + name.pos.line - 1).toString
+      )
     }
 
     val data = json.Object("externs" -> json.Array(list))
@@ -70,7 +95,11 @@ object Main extends App {
     val template =
       """
         |{{#externs}}
-        |def {{name}}({{#params}}{{name}}: {{type}}{{comma}}{{/params}}): {{type}} = extern //{{line}}
+        |def {{name}}({{#params}}{{name}}: {{native}}{{comma}}{{/params}}): {{native}} = extern //{{line}}
+        |{{/externs}}
+        |
+        |{{#externs}}
+        |def {{camel}}({{#params}}{{name}}: {{scala}}{{comma}}{{/params}}): {{scala}} = lib.{{name}}({{#params}}{{name}}{{comma}}{{/params}})
         |{{/externs}}
         |""".trim.stripMargin
 
@@ -79,11 +108,12 @@ object Main extends App {
 
   def externParams(params: List[ParameterAST]): json.Array = {
     val array = for (ParameterAST(Some(Ident(_, name)), typ) <- params) yield {
-      (name, type2string(typ))
+      (name, native2string(typ), scala2string(typ))
     }
 
     json.Array(array.zipWithIndex map {
-      case ((n, t), i) => json.Object("name" -> n, "type" -> t, "comma" -> (if (i == array.length - 1) "" else ", "))
+      case ((n, nt, st), i) =>
+        json.Object("name" -> n, "native" -> nt, "scala" -> st, "comma" -> (if (i == array.length - 1) "" else ", "))
     })
   }
 

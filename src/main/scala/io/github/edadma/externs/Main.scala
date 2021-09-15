@@ -54,7 +54,7 @@ object Main extends App {
     case TypedefType(Ident(_, name), const)                   => s"${if (const) s"${'/'}*const*/ " else ""}$name"
   }
 
-  val prefix = 12
+  val prefix = 5
 
   OParser.parse(parser, args, Config(null, 1, None)) match {
     case Some(conf) => app(conf)

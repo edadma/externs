@@ -7,7 +7,7 @@ import scala.util.parsing.input.{CharSequenceReader, Position, Positional}
 
 object ExternsParser extends RegexParsers with PackratParsers {
 
-  override protected val whiteSpace: Regex = """(\s|/\*(.|[\r\n])*?\*/|//.*)+""".r
+  override protected val whiteSpace: Regex = """(\s|/\*(.|[\r\n])*?\*/|//.*)+""".r // /\*(.|[\r\n])*?\*/|
 
   lazy val pos: PackratParser[Position] = positioned(success(new Positional {})) ^^ (_.pos)
 
@@ -17,9 +17,8 @@ object ExternsParser extends RegexParsers with PackratParsers {
     rep(extern) ^^ ExternDeclarationsAST
 
   lazy val extern: PackratParser[ExternDeclarationAST] =
-    ((kw("YAML_DECLARE") ~ "(" ~> ctype <~ ")") | (kw("cairo_public") | kw("extern")) ~> ctype) ~ ident ~ ("(" ~> repsep(
-      externParam,
-      ",") <~ ")") <~ ";" ^^ {
+    ((kw("YAML_DECLARE") ~ "(" ~> ctype <~ ")") | (kw("cairo_public") | kw("extern") | kw("IUP_API") | kw(
+      "IUPIMGLIB_API")) ~> ctype) ~ ident ~ ("(" ~> repsep(externParam, ",") <~ ")") <~ ";" ^^ {
       case t ~ n ~ List(ParameterAST(name, PrimitiveType("Unit", "Unit", false, _))) => ExternDeclarationAST(n, t, Nil)
       case t ~ n ~ ps                                                                => ExternDeclarationAST(n, t, ps)
     }

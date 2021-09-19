@@ -54,11 +54,17 @@ object Main extends App {
     case TypedefType(Ident(_, name), const)                   => s"${if (const) s"${'/'}*const*/ " else ""}$name"
   }
 
-  val prefix = 5
+  val prefix = 1
 
   OParser.parse(parser, args, Config(null, 1, None)) match {
     case Some(conf) => app(conf)
     case _          =>
+  }
+
+  def lowerCamel(s: String): String = {
+    val c = camel(s)
+
+    c.head.toLower +: c.tail
   }
 
   def camel(s: String): String = {
@@ -82,7 +88,7 @@ object Main extends App {
     for (ExternDeclarationAST(name, typ, params) <- externs) {
       list += json.Object(
         "name"   -> name.s,
-        "camel"  -> camel(name.s drop prefix),
+        "camel"  -> lowerCamel(name.s drop prefix),
         "params" -> externParams(params),
         "native" -> native2string(typ),
         "scala"  -> scala2string(typ),

@@ -87,12 +87,13 @@ object Main extends App {
 
     for (ExternDeclarationAST(name, typ, params) <- externs) {
       list += json.Object(
-        "name"   -> name.s,
-        "camel"  -> lowerCamel(name.s drop prefix),
-        "params" -> externParams(params),
-        "native" -> native2string(typ),
-        "scala"  -> scala2string(typ),
-        "line"   -> (conf.start + name.pos.line - 1).toString
+        "name"    -> name.s,
+        "varargs" -> params.exists(_.typ == VarArgsType),
+        "camel"   -> lowerCamel(name.s drop prefix),
+        "params"  -> externParams(params),
+        "native"  -> native2string(typ),
+        "scala"   -> scala2string(typ),
+        "line"    -> (conf.start + name.pos.line - 1).toString
       )
     }
 
@@ -101,11 +102,11 @@ object Main extends App {
     val template =
       """
         |{{#externs}}
-        |def {{name}}({{#params}}{{name}}: {{native}}{{comma}}{{/params}}): {{native}} = extern //{{line}}
+        |{{#varargs}}// {{/varargs}}def {{name}}({{#params}}{{name}}: {{native}}{{comma}}{{/params}}): {{native}} = extern //{{line}}
         |{{/externs}}
         |
         |{{#externs}}
-        |def {{camel}}({{#params}}{{name}}: {{scala}}{{comma}}{{/params}}): {{scala}} = lib.{{name}}({{#params}}{{name}}{{comma}}{{/params}})
+        |{{#varargs}}// {{/varargs}}def {{camel}}({{#params}}{{name}}: {{scala}}{{comma}}{{/params}}): {{scala}} = lib.{{name}}({{#params}}{{name}}{{comma}}{{/params}})
         |{{/externs}}
         |""".trim.stripMargin
 

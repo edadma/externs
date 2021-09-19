@@ -13,3 +13,4 @@ trait TypeAST                                                                   
 case class PrimitiveType(native: String, scala: String, unsigned: Boolean, const: Boolean) extends TypeAST
 case class TypedefType(name: Ident, const: Boolean)                                        extends TypeAST
 case class PointerType(typ: TypeAST, const: Boolean)                                       extends TypeAST
+case object VarArgsType                                                                    extends TypeAST { val const = false }

@@ -52,7 +52,7 @@ object ExternsParser extends RegexParsers with PackratParsers {
   lazy val externParam: PackratParser[ParameterAST] =
     ctype ~ opt("/*" ~> ident <~ "*/" | ident) ^^ {
       case t ~ n => ParameterAST(n, t)
-    }
+    } | "..." ^^^ ParameterAST(None, VarArgsType)
 
   lazy val value: PackratParser[String] =
     """0x[0-9a-fA-F]+|-?[0-9]+""".r ^^ identity
